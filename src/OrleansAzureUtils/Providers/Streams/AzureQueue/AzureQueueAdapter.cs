@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Orleans.AzureUtils;
 using Orleans.Streams;
+using System.Linq;
 
 namespace Orleans.Providers.Streams.AzureQueue
 {
@@ -49,8 +50,9 @@ namespace Orleans.Providers.Streams.AzureQueue
                 await tmpQueue.InitQueueAsync();
                 queue = Queues.GetOrAdd(queueId, tmpQueue);
             }
-            var cloudMsg = AzureQueueBatchContainer.ToCloudQueueMessage(streamGuid, streamNamespace, events, requestContext);
-            await queue.AddQueueMessage(cloudMsg);
+
+            var messages = AzureQueueBatchContainer2.ToCloudQueueMessages(streamGuid, streamNamespace, events, requestContext);
+            await Task.WhenAll(messages.Select(queue.AddQueueMessage));
         }
     }
 }

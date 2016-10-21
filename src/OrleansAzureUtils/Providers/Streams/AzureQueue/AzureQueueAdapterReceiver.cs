@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using Microsoft.WindowsAzure.Storage.Queue;
 using Orleans.AzureUtils;
 using Orleans.Runtime;
 using Orleans.Streams;
+using Orleans.Providers.Streams.Common;
 
 namespace Orleans.Providers.Streams.AzureQueue
 {
@@ -18,6 +20,7 @@ namespace Orleans.Providers.Streams.AzureQueue
         private long lastReadMessage;
         private Task outstandingTask;
         private readonly Logger logger;
+        private readonly List<MessageChunk> partialMessages = new List<MessageChunk>();
 
         public QueueId Id { get; private set; }
 
@@ -79,10 +82,27 @@ namespace Orleans.Providers.Streams.AzureQueue
                 outstandingTask = task;
                 IEnumerable<CloudQueueMessage> messages = await task;
 
-                List<IBatchContainer> azureQueueMessages = messages
-                    .Select(msg => (IBatchContainer)AzureQueueBatchContainer.FromCloudQueueMessage(msg, lastReadMessage++)).ToList();
+                var list = new List<IBatchContainer>();
+                foreach (var msg in messages)
+                {
+                    MessageChunk chunk;
+                    if (MessageChunk.TryCreateFromCloudQueueMessage(msg, out chunk))
+                    {
+                        partialMessages.Add(chunk);
+                    }
+                    else
+                    {
+                        list.Add(AzureQueueBatchContainer.FromCloudQueueMessage(msg, lastReadMessage++));
+                    }
+                }
 
-                return azureQueueMessages;
+                lastReadMessage++;
+                foreach (var item in AzureQueueBatchContainer2.FromMessageChunks(partialMessages, ref lastReadMessage))
+                {
+                    list.Add(item);
+                }
+
+                return list;
             }
             finally
             {

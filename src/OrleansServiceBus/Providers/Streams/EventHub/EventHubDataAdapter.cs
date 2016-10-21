@@ -195,7 +195,7 @@ namespace Orleans.ServiceBus.Providers
         /// <returns></returns>
         public virtual StreamSequenceToken GetSequenceToken(ref CachedEventHubMessage cachedMessage)
         {
-            return new EventSequenceToken(cachedMessage.SequenceNumber, 0);
+            return new EventSequenceToken2(cachedMessage.SequenceNumber, 0);
         }
 
         /// <summary>
@@ -208,7 +208,7 @@ namespace Orleans.ServiceBus.Providers
             Guid streamGuid = Guid.Parse(queueMessage.PartitionKey);
             string streamNamespace = queueMessage.GetStreamNamespaceProperty();
             IStreamIdentity stremIdentity = new StreamIdentity(streamGuid, streamNamespace);
-            StreamSequenceToken token = new EventSequenceToken(queueMessage.SequenceNumber, 0);
+            StreamSequenceToken token = new EventSequenceToken2(queueMessage.SequenceNumber, 0);
             return new StreamPosition(stremIdentity, token);
         }
 

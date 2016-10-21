@@ -200,6 +200,28 @@ namespace Orleans.Runtime
             return this;
         }
 
+        /// <summary>
+        /// Append an array segment to the byte array.
+        /// Note that this assumes that the data passed in is now owned by the ByteArrayBuilder, and will not be modified.
+        /// </summary>
+        /// <param name="segment"></param>
+        public ByteArrayBuilder Append(ArraySegment<byte> segment)
+        {
+            if ((currentBuffer != null) && (currentOffset > 0))
+            {
+                completedBuffers.Add(new ArraySegment<byte>(currentBuffer, 0, currentOffset));
+                completedLength += currentOffset;
+            }
+
+            completedBuffers.Add(segment);
+            completedLength += segment.Count;
+
+            currentBuffer = null;
+            currentOffset = 0;
+
+            return this;
+        }
+
         private ByteArrayBuilder AppendImpl(Array array)
         {
             int n = Buffer.ByteLength(array);

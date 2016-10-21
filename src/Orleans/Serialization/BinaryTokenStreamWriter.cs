@@ -254,6 +254,12 @@ namespace Orleans.Serialization
             ab.Append((byte)t);
         }
 
+        internal void  Write(ArraySegment<byte> segment)
+        {
+            ab.Append(segment.Count);
+            ab.Append(segment);
+        }
+
         // Types
 
         /// <summary> Write a type header for the specified Type to the stream. </summary>
